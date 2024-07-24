@@ -318,11 +318,17 @@ public class epos2Plugin extends CordovaPlugin {
         }
 
         try {
-          printer.clearCommandBuffer();
-          printer.setReceiveEventListener(null);
-          printerConnected = false;
-          printer = null;
-        } catch (Exception e) {
+          if(printer != null) {
+              printer.clearCommandBuffer();
+              printer.setReceiveEventListener(null);
+              printerConnected = false;
+              printer = null;
+          }
+          else {
+              return;
+          }
+        }
+        catch (Exception e) {
          e.printStackTrace();
         }
 
