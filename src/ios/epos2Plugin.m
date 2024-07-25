@@ -473,7 +473,7 @@ static NSDictionary *levelMap;
             result = [self->printer addPageDirection:EPOS2_DIRECTION_LEFT_TO_RIGHT];
         }
         if (result == EPOS2_SUCCESS) {
-            result = [printer addPagePosition:0 y:0];
+            result = [self->printer addPagePosition:0 y:0];
         }
         if (result == EPOS2_SUCCESS) {
             result = [self->printer addPageLine:startX y1:0 x2:endX y2:0 style:lineStyle];
