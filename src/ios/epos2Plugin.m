@@ -465,21 +465,21 @@ static NSDictionary *levelMap;
         int result = EPOS2_SUCCESS;
         CDVPluginResult *cordovaResult;
         
-        result = [printer addPageBegin];
+        result = [self->printer addPageBegin];
         if (result == EPOS2_SUCCESS) {
-            result = [printer addPageArea:0 y:0 width:388 height:6];
+            result = [self->printer addPageArea:0 y:0 width:388 height:6];
         }
         if (result == EPOS2_SUCCESS) {
-            result = [printer addPageDirection:EPOS2_DIRECTION_LEFT_TO_RIGHT];
+            result = [self->printer addPageDirection:EPOS2_DIRECTION_LEFT_TO_RIGHT];
         }
         if (result == EPOS2_SUCCESS) {
-            result = [printer addPagePosition:0 y:0];
+            result = [self->printer addPagePosition:0 y:0];
         }
         if (result == EPOS2_SUCCESS) {
-            result = [printer addPageLine:startX y1:0 x2:endX y2:0 style:lineStyle];
+            result = [self->printer addPageLine:startX y1:0 x2:endX y2:0 style:lineStyle];
         }
         if (result == EPOS2_SUCCESS) {
-            result = [printer addPageEnd];
+            result = [self->printer addPageEnd];
         }
 
         if (result != EPOS2_SUCCESS) {
@@ -584,7 +584,7 @@ static NSDictionary *levelMap;
         int result = EPOS2_SUCCESS;
         CDVPluginResult *cordovaResult;
         
-        result = [printer addImage:image x:0 y:0
+        result = [self->printer addImage:image x:0 y:0
                             width:image.size.width
                             height:image.size.height
                             color:EPOS2_COLOR_1
@@ -681,7 +681,7 @@ static NSDictionary *levelMap;
         CDVPluginResult *cordovaResult;
         
         // feed paper
-        result = [printer addFeedLine:3];
+        result = [self->printer addFeedLine:3];
         if (result != EPOS2_SUCCESS) {
             NSLog(@"[epos2] Error in Epos2Printer.addFeedLine(): %d", result);
             return;
@@ -693,23 +693,26 @@ static NSDictionary *levelMap;
             NSLog(@"[epos2] Error in Epos2Printer.addCut(): %d", result);
             return;
         }
-        result = [printer connect:printerTarget timeout:EPOS2_PARAM_DEFAULT];
+        result = [self->printer sendData:EPOS2_PARAM_DEFAULT];
         if (result != EPOS2_SUCCESS) {
-            NSLog(@"[epos2] Error in Epos2Printer.connect(): %d", result);
-            return NO;
+            if (result == EPOS2_ERR_TIMEOUT) {
+                NSLog(@"[epos2] Timeout error occurred while sending data.");
+            }
+            else {
+                [self->printer clearCommandBuffer];
+                [self->printer disconnect];
+                [self finalizeObject];
+                cordovaResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error 0x00051: Failed to send print job"];
+                [self.commandDelegate sendPluginResult:cordovaResult callbackId:self->sendDataCallbackId];
+            }
         }
         else {
-           result = [self->printer sendData:EPOS2_PARAM_DEFAULT];
-        }
-        if (result != EPOS2_SUCCESS) {
-            [printer clearCommandBuffer];
-            [self->printer disconnect];
-            [self finalizeObject];
-            cordovaResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error 0x00051: Failed to send print job"];
-            [self.commandDelegate sendPluginResult:cordovaResult callbackId:sendDataCallbackId];
-        }
-        else {
-            [printer clearCommandBuffer];
+            if (result == EPOS2_ERR_TIMEOUT) {
+                NSLog(@"[epos2] Timeout error occurred while sending data.");
+            }
+            else {
+                [self->printer clearCommandBuffer];
+            }
         }
       
         // do not yet trigger callback but wait for onPtrReceive
