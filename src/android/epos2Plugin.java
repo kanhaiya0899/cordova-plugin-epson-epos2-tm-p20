@@ -302,30 +302,44 @@ public class epos2Plugin extends CordovaPlugin {
         }
 
         try {
-            printer.endTransaction();
+            if (printer != null) {
+                printer.endTransaction();
+            }
         }
         catch (Epos2Exception e) {
-            Log.e(TAG, "Error ending transaction: " + e.getErrorStatus(), e);
+            if (e.getErrorStatus() == Epos2Exception.ERR_TIMEOUT) {
+                Log.e(TAG, "Timeout error while ending transaction", e);
+            } else {
+                Log.e(TAG, "Error ending transaction: " + e.getErrorStatus(), e);
+            }
           e.printStackTrace();
         }
 
         try {
-            printer.disconnect();
+            if (printer != null) {
+                printer.disconnect();
+            }
         }
         catch (Epos2Exception e) {
-            Log.e(TAG, "Error disconnecting printer: " + e.getErrorStatus(), e);
+             if (e.getErrorStatus() == Epos2Exception.ERR_TIMEOUT) {
+                Log.e(TAG, "Timeout error while disconnecting printer", e);
+            } else {
+                Log.e(TAG, "Error disconnecting printer: " + e.getErrorStatus(), e);
+             }
           e.printStackTrace();
         }
 
         try {
-          printer.clearCommandBuffer();
-          printer.setReceiveEventListener(null);
-          printerConnected = false;
-          printer = null;
-        } catch (Exception e) {
+          if(printer != null) {
+              printer.clearCommandBuffer();
+              printer.setReceiveEventListener(null);
+              printerConnected = false;
+              printer = null;
+          }
+        }
+        catch (Exception e) {
          e.printStackTrace();
         }
-
 
         PluginResult result = new PluginResult(Status.OK, true);
         callbackContext.sendPluginResult(result);
@@ -339,7 +353,9 @@ public class epos2Plugin extends CordovaPlugin {
 
     while (true) {
       try {
-        printer.disconnect();
+        if (printer != null) {
+            printer.disconnect();
+        }
         break;
       } catch (final Exception e) {
         if (e instanceof Epos2Exception) {
@@ -393,30 +409,37 @@ public class epos2Plugin extends CordovaPlugin {
         }
 
         try {
-            printer.addTextLang(textLanguage);
-            printer.addTextFont(textFont);
-            printer.addTextSize(textSize, textSize);
-            printer.addTextAlign(textAlign);
-
-            for (int i = 0; i < printData.length(); i++) {
-                String data = printData.getString(i);
-                if ("\n".equals(data)) {
-                    printer.addFeedLine(1);
-                } else {
-                    printer.addText(data);
+            if (printer != null) {
+                printer.addTextLang(textLanguage);
+                printer.addTextFont(textFont);
+                printer.addTextSize(textSize, textSize);
+                printer.addTextAlign(textAlign);
+    
+                for (int i = 0; i < printData.length(); i++) {
+                    String data = printData.getString(i);
+                    if ("\n".equals(data)) {
+                        printer.addFeedLine(1);
+                    } else {
+                        printer.addText(data);
+                    }
                 }
             }
-
             callbackContext.sendPluginResult(new PluginResult(Status.OK, true));
         } catch (Epos2Exception e) {
             callbackContext.error("Error 0x00030: Failed to add text data");
             Log.e(TAG, "Error printing", e);
             try {
-                printer.disconnect();
-                printerConnected = false;
+                if (printer != null) {
+                    printer.disconnect();
+                }
+                    printerConnected = false;
             }
             catch (Epos2Exception ex) {
-                Log.e(TAG, "Error disconnecting", ex);
+                if (ex.getErrorStatus() == Epos2Exception.ERR_TIMEOUT) {
+                Log.e(TAG, "Timeout error while clearing command buffer or removing listener", ex);
+                } else {
+                    Log.e(TAG, "Error disconnecting", ex);
+                }
             }
         } catch (JSONException e) {
             callbackContext.error("Error 0x00000: Failed to read input data: " + e.getCause());
@@ -463,14 +486,18 @@ public class epos2Plugin extends CordovaPlugin {
         }
 
         try {
-            printer.addBarcode(data, bType, hriPosition, hriFont, bWidth, bHeight);
+             if (printer != null) {
+                printer.addBarcode(data, bType, hriPosition, hriFont, bWidth, bHeight);
+             }
 
             callbackContext.sendPluginResult(new PluginResult(Status.OK, true));
         } catch (Epos2Exception e) {
             callbackContext.error("Error 0x00040: Failed to add barcode data");
             Log.e(TAG, "Error printing", e);
             try {
-                printer.disconnect();
+                if (printer != null) {
+                    printer.disconnect();
+                }
                 printerConnected = false;
             } catch (Epos2Exception ex) {
                 Log.e(TAG, "Error disconnecting", ex);
@@ -518,14 +545,18 @@ public class epos2Plugin extends CordovaPlugin {
         }
 
         try {
-            printer.addSymbol(data, sType, level, width, height, size);
+             if (printer != null) {
+                printer.addSymbol(data, sType, level, width, height, size);
+             }
 
             callbackContext.sendPluginResult(new PluginResult(Status.OK, true));
         } catch (Epos2Exception e) {
             callbackContext.error("Error 0x00040: Failed to add symbol data");
             Log.e(TAG, "Error printing", e);
             try {
-                printer.disconnect();
+                if (printer != null) {
+                    printer.disconnect();
+                }
                 printerConnected = false;
             } catch (Epos2Exception ex) {
                 Log.e(TAG, "Error disconnecting", ex);
@@ -565,21 +596,25 @@ public class epos2Plugin extends CordovaPlugin {
         }
 
         try {
+            if (printer != null) {
             // use addPageline command
-            printer.addPageBegin();
-            printer.addPageArea(0, 0, 388, 6);
-            printer.addPageDirection(Printer.DIRECTION_LEFT_TO_RIGHT);
-            printer.addPagePosition(0, 0);
-            printer.addPageLine(startX, 0, endX, 0, lineStyle);
-            printer.addPageEnd();
-
-            callbackContext.sendPluginResult(new PluginResult(Status.OK, true));
+                printer.addPageBegin();
+                printer.addPageArea(0, 0, 388, 6);
+                printer.addPageDirection(Printer.DIRECTION_LEFT_TO_RIGHT);
+                printer.addPagePosition(0, 0);
+                printer.addPageLine(startX, 0, endX, 0, lineStyle);
+                printer.addPageEnd();
+    
+                callbackContext.sendPluginResult(new PluginResult(Status.OK, true));
+            }
         } catch (Epos2Exception e) {
             callbackContext.error("Error 0x00040: Failed to add line data");
             Log.e(TAG, "Error printing", e);
             try {
-                printer.disconnect();
-                printerConnected = false;
+                if (printer != null) {
+                    printer.disconnect();
+                    printerConnected = false;
+                }
             } catch (Epos2Exception ex) {
                 Log.e(TAG, "Error disconnecting", ex);
             }
@@ -635,7 +670,9 @@ public class epos2Plugin extends CordovaPlugin {
             callbackContext.error("Error 0x00040: Failed to add image data");
             Log.e(TAG, "Error printing", e);
             try {
-                printer.disconnect();
+                if (printer != null) {
+                    printer.disconnect();
+                }
                 printerConnected = false;
             } catch (Epos2Exception ex) {
                 Log.e(TAG, "Error disconnecting", ex);
@@ -670,21 +707,25 @@ public class epos2Plugin extends CordovaPlugin {
         // }
 
         try {
-            printer.addFeedLine(1);
-            printer.addCut(Printer.CUT_FEED);
-
-            printer.sendData(Printer.PARAM_DEFAULT);
-
-            printer.clearCommandBuffer();
+            if (printer != null) {
+                printer.addFeedLine(1);
+                printer.addCut(Printer.CUT_FEED);
+    
+                printer.sendData(Printer.PARAM_DEFAULT);
+    
+                printer.clearCommandBuffer();
+            }
 
         } catch (Epos2Exception e) {
             callbackContext.error("Error 0x00051: Failed to send print job");
             Log.e(TAG, "Error in sendData()", e);
 
             try {
-                printer.clearCommandBuffer();
-                printer.disconnect();
-                printerConnected = false;
+                if (printer != null) {
+                    printer.clearCommandBuffer();
+                    printer.disconnect();
+                    printerConnected = false;
+                }
             } catch (Epos2Exception ex) {
                 Log.e(TAG, "Error disconnecting", ex);
             }
