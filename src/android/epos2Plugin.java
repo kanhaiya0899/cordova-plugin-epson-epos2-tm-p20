@@ -337,13 +337,6 @@ public class epos2Plugin extends CordovaPlugin {
               printer = null;
           }
         }
-        catch (Epos2Exception ex) {
-            if (ex.getErrorStatus() == Epos2Exception.ERR_TIMEOUT) {
-                Log.e(TAG, "Timeout error while clearing command buffer or removing listener", ex);
-            } else {
-                Log.e(TAG, "Error clearing command buffer or removing listener", ex);
-            }
-        }
         catch (Exception e) {
          e.printStackTrace();
         }
